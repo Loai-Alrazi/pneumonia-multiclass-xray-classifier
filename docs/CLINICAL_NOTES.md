@@ -31,3 +31,4 @@ By integrating **Grad-CAM (Gradient-weighted Class Activation Mapping)**:
 
 ## 4. Ethical Disclaimer
 > **Notice:** This project is developed for research, education, and investigational decision-support purposes only. It is not approved by the FDA or regulatory health authorities for primary clinical diagnostic use. Final patient management decisions must always be made by a licensed healthcare professional.
+

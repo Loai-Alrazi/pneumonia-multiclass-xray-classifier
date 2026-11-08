@@ -242,3 +242,4 @@ else:
             matrix_path = Path(__file__).parent / "docs" / "assets" / "confusion_matrix.png"
             if matrix_path.exists():
                 st.image(str(matrix_path), caption="Multiclass Confusion Matrix on Independent Test Set (624 images)", use_container_width=True)
+

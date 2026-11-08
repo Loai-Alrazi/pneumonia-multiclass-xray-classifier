@@ -58,3 +58,4 @@ def test_gradcam_generation(explainer, dummy_image):
     assert isinstance(overlay, Image.Image)
     assert overlay.size == (224, 224)
     assert target in (0, 1, 2)
+

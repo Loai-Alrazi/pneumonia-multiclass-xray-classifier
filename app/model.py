@@ -93,3 +93,4 @@ class PneumoniaClassifier:
         scores = {self.class_names[i]: float(probs[i]) for i in range(len(self.class_names))}
 
         return predicted_class, confidence, scores
+
