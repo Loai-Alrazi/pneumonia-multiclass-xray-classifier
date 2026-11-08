@@ -1,0 +1,29 @@
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+env/
+venv/
+ENV/
+
+# Jupyter & Checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Testing & Caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Output logs and temporary test runs
+*.log
+docs/assets/test_gradcam_out.png
+gradcam_result.png

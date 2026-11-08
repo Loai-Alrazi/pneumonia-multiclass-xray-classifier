@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pneumonia-multiclass-xray-classifier"
+version = "1.0.0"
+description = "Interpretable 3-Class Pediatric Chest X-Ray Diagnosis with MobileNetV2 and Grad-CAM"
+authors = [{ name = "Loay Alrazi" }]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "Pillow>=9.5.0",
+    "numpy>=1.24.0",
+    "matplotlib>=3.7.0",
+    "scikit-learn>=1.2.0",
+    "streamlit>=1.28.0",
+    "tqdm>=4.65.0",
+]
+
+[project.scripts]
+pneumonia-predict = "predict:main"
