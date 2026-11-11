@@ -1,4 +1,9 @@
-"""Streamlit Web Application: Chest X-Ray Pneumonia Multiclass Diagnosis with Grad-CAM."""
+"""Streamlit Web Application: Chest X-Ray Pneumonia Multiclass Diagnosis with Grad-CAM.
+
+Supports Dual-Model Academic Architecture:
+- Exp 2 (Default): Controlled Baseline (Frozen MobileNetV2, Seed 42)
+- Exp 5 (Optional): Validation Winner (Top 4 Feature Blocks Fine-Tuned, Seed 42)
+"""
 
 from pathlib import Path
 import time
@@ -78,24 +83,37 @@ st.markdown("""
 
 
 @st.cache_resource
-def load_ai_engine():
-    """Cache and load the PyTorch MobileNetV2 classifier."""
-    checkpoint_path = Path(__file__).parent / "artifacts" / "pneumonia_3class.pt"
-    classifier = PneumoniaClassifier(checkpoint_path=checkpoint_path)
+def load_ai_engine(variant: str = "exp2"):
+    """Cache and load the selected PyTorch MobileNetV2 classifier variant."""
+    classifier = PneumoniaClassifier(model_variant=variant)
     explainer = GradCAMExplainer(classifier)
     return classifier, explainer
 
-
-classifier, explainer = load_ai_engine()
 
 # Sidebar: Controls & Information
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/lungs.png", width=70)
     st.title("Diagnostic Suite")
-    st.markdown("Deep Learning system for 3-class pediatric Chest X-Ray triage.")
+    st.markdown("Academic research system for 3-class pediatric Chest X-Ray triage.")
 
     st.markdown("---")
-    st.subheader("📁 Test Samples")
+    st.subheader("🔬 Model Architecture Variant")
+    model_choice = st.radio(
+        "Select Active Checkpoint:",
+        options=[
+            "Exp 2: Controlled Baseline (Frozen MobileNetV2) [Default]",
+            "Exp 5: Validation Winner (Top-4 Fine-Tuned)"
+        ],
+        index=0,
+        help="Exp 2 is the controlled experimental baseline (frozen features + class-weighted head). Exp 5 fine-tunes the top 4 feature blocks and scored higher on internal validation, but lower on the historical Test split."
+    )
+    
+    variant_key = "exp2" if model_choice.startswith("Exp 2") else "exp5"
+    classifier, explainer = load_ai_engine(variant_key)
+
+    st.markdown("---")
+    st.subheader("📁 Demo Images")
+    st.caption("Drawn from the historical Test split; for demonstration only.")
     samples_dir = Path(__file__).parent / "sample_images"
     sample_files = list(samples_dir.glob("*.jpeg")) + list(samples_dir.glob("*.jpg")) + list(samples_dir.glob("*.png"))
 
@@ -107,22 +125,37 @@ with st.sidebar:
     )
 
     st.markdown("---")
-    st.subheader("⚙️ Model Specifications")
-    st.markdown("""
-    - **Architecture:** MobileNetV2
-    - **Classes:** Normal / Bacterial / Viral
-    - **Pre-trained:** ImageNet-1K V2
-    - **Target Resolution:** 224 × 224 px
-    - **Bacterial Sensitivity:** `93.8%`
-    - **Viral Sensitivity:** `74.3%`
-    """)
+    st.subheader("⚙️ Active Model Profile")
+    if variant_key == "exp2":
+        st.markdown("""
+        - **Model:** Exp 2 Baseline (Seed 42)
+        - **Architecture:** MobileNetV2 (Frozen)
+        - **Classifier:** 3-Class Weighted Head
+        - **Val Macro F1 (Single):** `77.55%`
+        - **Val Normal Recall:** `95.19%`
+        - **Val Viral Recall:** `61.75%`
+        - **Val Bacterial Recall:** `76.49%`
+        - **Role:** Controlled Baseline Anchor
+        """)
+    else:
+        st.markdown("""
+        - **Model:** Exp 5 Fine-Tuned (Seed 42)
+        - **Architecture:** MobileNetV2 (Top 4 Feature Blocks Unfrozen)
+        - **Classifier:** 3-Class Weighted Head
+        - **Val Macro F1 (Single):** `79.56%`
+        - **Val Normal Recall:** `96.67%`
+        - **Val Viral Recall:** `65.74%`
+        - **Val Bacterial Recall:** `76.49%`
+        - **Role:** Peak Validation Explorer
+        """)
+    st.caption("Validation figures come from the same set used for model selection and are therefore optimistic.")
 
     st.markdown("---")
     st.caption("Developed by Loay Alrazi • Applied AI Engineer")
 
 # Main Page Header
 st.markdown('<div class="main-header">🫁 Interpretable Chest X-Ray Diagnosis</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Automated multiclass screening (Normal vs. Bacterial vs. Viral Pneumonia) with Grad-CAM visual explanations.</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="sub-header">Automated multiclass screening (Normal vs. Bacterial vs. Viral) with Grad-CAM visual explanations. Active Model: <b>{classifier.experiment_name}</b>.</div>', unsafe_allow_html=True)
 
 # Image Input Section
 uploaded_file = st.file_uploader(
@@ -147,15 +180,15 @@ if input_image is None:
     
     col1, col2 = st.columns([1, 1])
     with col1:
-        st.subheader("Model Performance on Test Callset")
+        st.subheader("Original Release Model (Exp 0): Historical Test Results")
         conf_img = Path(__file__).parent / "docs" / "assets" / "confusion_matrix.png"
         if conf_img.exists():
-            st.image(str(conf_img), caption="Test Set Confusion Matrix", use_container_width=True)
+            st.image(str(conf_img), caption="Exp 0 (original 3-epoch model, not the active model): confusion matrix on the historical Test split (N=624)", use_container_width=True)
     with col2:
         st.subheader("Explainability Overview (Grad-CAM)")
         cam_img = Path(__file__).parent / "docs" / "assets" / "gradcam_sample.png"
         if cam_img.exists():
-            st.image(str(cam_img), caption="Grad-CAM Anatomic Activation Example", use_container_width=True)
+            st.image(str(cam_img), caption="Grad-CAM example generated with the original Exp 0 model", use_container_width=True)
 else:
     # Run Inference
     t0 = time.time()
@@ -171,21 +204,15 @@ else:
             st.image(input_image, caption=f"Input X-Ray: {image_title}", use_container_width=True)
 
         with col_pred:
-            st.markdown("### Clinical Assessment")
+            st.markdown("### Model Assessment")
             
             badge_class = f"badge-{predicted_class.lower()}"
             st.markdown(f'<span class="{badge_class}">{predicted_class} PNEUMONIA</span>' if predicted_class != "NORMAL" else f'<span class="{badge_class}">NORMAL (NO PNEUMONIA)</span>', unsafe_allow_html=True)
-            st.markdown(f"**Confidence Level:** `{confidence * 100:.2f}%` &nbsp;|&nbsp; **Latency:** `{inference_time:.1f} ms`")
+            st.markdown(f"**Confidence Level:** `{confidence * 100:.2f}%` &nbsp;|&nbsp; **Latency:** `{inference_time:.1f} ms` on `{classifier.device.type.upper()}`")
 
             st.markdown("---")
             st.markdown("#### Differential Probability Distribution")
             
-            colors = {
-                "BACTERIAL": "#EF4444",
-                "NORMAL": "#10B981",
-                "VIRAL": "#F59E0B"
-            }
-
             for cls_name, prob in scores.items():
                 col_lbl, col_bar, col_pct = st.columns([1.2, 3, 0.8])
                 with col_lbl:
@@ -197,10 +224,10 @@ else:
 
             st.markdown("""
             <div class="disclaimer-box">
-                <b>Clinical Context Note:</b><br>
-                Bacterial pneumonia typically shows focal lobar consolidation and requires antibiotic treatment.
-                Viral pneumonia presents with diffuse interstitial patterns and requires supportive/antiviral care.
-                This software is intended as an investigational decision-support tool.
+                <b>Academic Research Disclaimer:</b><br>
+                This software is intended for research and educational demonstration only.
+                It is not approved by medical regulatory authorities for primary diagnosis or autonomous triage.
+                Radiographic interpretation must always be performed by licensed healthcare professionals.
             </div>
             """, unsafe_allow_html=True)
 
@@ -232,14 +259,14 @@ else:
         st.caption("Warm regions (Red/Yellow) denote high feature activation; cool regions (Blue/Cyan) denote low activation.")
 
     with tabs[2]:
-        st.markdown("### Training & Validation Analytics")
+        st.markdown("### Historical Analytics (Original Exp 0 Release Model)")
+        st.caption("These figures were produced by the original 3-epoch Exp 0 model, not by the active Exp 2 / Exp 5 checkpoint.")
         b1, b2 = st.columns([1, 1])
         with b1:
             curves_path = Path(__file__).parent / "docs" / "assets" / "learning_curves.png"
             if curves_path.exists():
-                st.image(str(curves_path), caption="Training & Validation Loss / Accuracy Across Epochs", use_container_width=True)
+                st.image(str(curves_path), caption="Exp 0: training & validation loss / accuracy across 3 epochs", use_container_width=True)
         with b2:
             matrix_path = Path(__file__).parent / "docs" / "assets" / "confusion_matrix.png"
             if matrix_path.exists():
-                st.image(str(matrix_path), caption="Multiclass Confusion Matrix on Independent Test Set (624 images)", use_container_width=True)
-
+                st.image(str(matrix_path), caption="Exp 0: confusion matrix on the historical Test split (N=624)", use_container_width=True)

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""CLI Inference tool for Chest X-Ray Multiclass Pneumonia Classification."""
+"""CLI Inference tool for Chest X-Ray Multiclass Pneumonia Classification.
+
+Supports the Dual-Model Framework:
+- Exp 2 (Default): Controlled Experimental Baseline (Frozen MobileNetV2, Seed 42).
+- Exp 5 (Optional): Validation-Optimized Variant (Top-4 blocks fine-tuned, Seed 42).
+"""
 
 import argparse
 import json
@@ -30,11 +35,20 @@ def format_table(scores: dict, predicted_class: str) -> str:
 
 
 def main():
+    # The result table uses box-drawing characters, which legacy Windows code pages
+    # (e.g. cp1252 when output is piped or redirected) cannot encode.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+
     parser = argparse.ArgumentParser(
         description="Chest X-Ray Pneumonia Multiclass Diagnosis CLI (MobileNetV2 + Grad-CAM)"
     )
     parser.add_argument("--image", "-i", type=str, required=True, help="Path to input chest X-ray image (JPEG/PNG)")
-    parser.add_argument("--checkpoint", "-c", type=str, default=None, help="Custom checkpoint path (.pt)")
+    parser.add_argument(
+        "--model", "-m", type=str, choices=["exp2", "exp5"], default="exp2",
+        help="Model variant: 'exp2' (default baseline, frozen MobileNetV2) or 'exp5' (validation-tuned, top-4 blocks fine-tuned)"
+    )
+    parser.add_argument("--checkpoint", "-c", type=str, default=None, help="Custom checkpoint path (.pt), overrides --model")
     parser.add_argument("--device", "-d", type=str, default=None, help="Inference device ('cpu' or 'cuda')")
     parser.add_argument("--gradcam", "-g", action="store_true", help="Generate Grad-CAM interpretability overlay")
     parser.add_argument("--output", "-o", type=str, default="gradcam_result.png", help="Path to save Grad-CAM image")
@@ -49,7 +63,11 @@ def main():
 
     # Initialize classifier
     try:
-        classifier = PneumoniaClassifier(checkpoint_path=args.checkpoint, device=args.device)
+        classifier = PneumoniaClassifier(
+            checkpoint_path=args.checkpoint,
+            model_variant=args.model,
+            device=args.device
+        )
     except Exception as e:
         print(f"Error initializing model: {e}", file=sys.stderr)
         sys.exit(1)
@@ -67,9 +85,13 @@ def main():
         overlay_pil.save(out_path)
         gradcam_saved = str(out_path)
 
+    model_desc = f"{classifier.experiment_name} (Loaded from: {classifier.checkpoint_path.name})"
+
     if args.json:
         result = {
             "image": str(image_path),
+            "model_variant": classifier.model_variant,
+            "checkpoint": str(classifier.checkpoint_path),
             "predicted_class": predicted_class,
             "confidence": round(confidence, 4),
             "probabilities": {k: round(v, 4) for k, v in scores.items()},
@@ -82,16 +104,17 @@ def main():
         print("   Chest X-Ray Pneumonia Multiclass AI Diagnostic Tool   ")
         print("========================================================")
         print(f"Input Image:     {image_path.name}")
+        print(f"Model Variant:   {model_desc}")
         print(f"Diagnosis:       {predicted_class} ({confidence * 100:.2f}%)")
         print(f"Inference Time:  {elapsed_ms:.1f} ms on {classifier.device.type.upper()}\n")
         print(format_table(scores, predicted_class))
         if gradcam_saved:
             print(f"\n[+] Grad-CAM explanation saved to: {gradcam_saved}")
         print("--------------------------------------------------------")
-        print("Notice: AI assistive tool for research purposes only.")
+        print("Notice: Educational & research exploration tool only.")
+        print("Not approved for autonomous clinical triage or diagnosis.")
         print("========================================================\n")
 
 
 if __name__ == "__main__":
     main()
-

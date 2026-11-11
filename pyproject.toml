@@ -23,3 +23,9 @@ dependencies = [
 [project.scripts]
 pneumonia-predict = "predict:main"
 
+[tool.pytest.ini_options]
+# Keep pytest out of experiments/archive: some archived scripts (e.g. test_threshold_calibration.py)
+# would evaluate on the Test split if collected.
+testpaths = ["tests"]
+norecursedirs = [".*", "build", "dist", "*.egg", "venv", ".venv", "experiments", "artifacts", "notebooks"]
+

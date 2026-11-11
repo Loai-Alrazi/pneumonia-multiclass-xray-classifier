@@ -27,4 +27,15 @@ Thumbs.db
 *.log
 docs/assets/test_gradcam_out.png
 gradcam_result.png
+outputs/
+
+# Machine-specific launcher (hardcoded local interpreter path)
+run_app.bat
+
+# Checkpoints: only the two served models are version-controlled.
+# Seed/ablation checkpoints (~320 MB) stay local; their metrics are in
+# artifacts/checkpoint_validation_metadata.json.
+artifacts/*.pt
+!artifacts/pneumonia_3class.pt
+!artifacts/model_exp5_finetune_top4blocks_s42.pt
 
