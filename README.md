@@ -36,13 +36,13 @@ $$\text{Accuracy} \equiv \text{Support-Weighted Recall} = \frac{404 \cdot R_{\te
 
 | Model Candidate | Architectural & Training Configuration | Single-Seed Val Macro F1 (Seed 42 / Mean $\pm$ SD¹) | 3-Seed Ensemble Val Macro F1 | Val Accuracy (Ensemble) | Normal Recall ($N=270$) | Viral Recall ($N=251$) | Bacterial Recall ($N=404$) | Unweighted Val Loss |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **Exp 0**² | MobileNetV2, 3 epochs initial baseline, unweighted CE | $75.57\%$ (single) | — | $76.65\%$ | $93.33\%$ | $54.18\%$ | $77.97\%$ | $0.5584$ |
+| **Exp 0**² | MobileNetV2, 3 epochs initial baseline, unweighted CE | $75.57\%$ (single) | — | $76.65\%$ (single) | $93.70\%$ | $54.18\%$ | $79.21\%$ | $0.5584$ |
 | **Exp 1** | MobileNetV2, 12 epochs linear head, unweighted CE | $76.30\%$ ($76.47\% \pm 0.27\%$) | $76.67\%$ | $77.41\%$ | $96.67\%$ | $57.77\%$ | $76.98\%$ | $0.5338$ |
 | **Exp 2 (Baseline)** | **MobileNetV2, 12 epochs linear head, class-weighted CE** | **$77.55\%$** ($76.98\% \pm 0.53\%$) | **$77.17\%$** | **$77.73\%$** | **$96.67\%$** | **$60.16\%$** | **$75.99\%$** | **$0.5435$** |
 | **Exp 5 (Val Winner)** | **MobileNetV2, top 4 feature blocks fine-tuned, weighted CE** | **$79.56\%$** ($79.33\% \pm 0.18\%$) | **$79.79\%$** | **$80.00\%$** | **$97.41\%$** | **$63.35\%$** | **$78.71\%$** | **$0.4984$** |
 
 ¹ Population SD (ddof = 0) across seeds 42, 123 and 456; the sample SD (ddof = 1) is about 22% larger.
-² Exp 0 is the original released checkpoint (commit `057eee1`). `artifacts/model_exp0_baseline_3epochs.pt` is a later re-run with different weights and metrics (Val Macro F1 $74.72\%$).
+² Exp 0 is the original released checkpoint (commit `057eee1`; SHA-256 `3fe0389aa94568d4…`, kept locally as `artifacts/pneumonia_3class_exp0_backup.pt`). Its row was re-verified by one validation-only evaluation of that checkpoint (correct: $320/404$ Bacterial, $253/270$ Normal, $136/251$ Viral; $709/925$ overall); accuracy and loss also match the training history stored in the checkpoint. Earlier versions of this table listed Normal and Bacterial recall as $93.33\%$ and $77.97\%$, which did not match this checkpoint. `artifacts/model_exp0_baseline_3epochs.pt` is a later re-run with different weights and metrics (Val Macro F1 $74.72\%$).
 
 ### Controlled Experimental Interventions (Paired Bootstrap Clustered by Patient Group, $B=2,000$)
 
