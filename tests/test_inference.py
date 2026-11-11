@@ -1,10 +1,28 @@
 """Automated Unit Tests for the Pneumonia Multiclass AI Inference Engine."""
 
-import pytest
+try:
+    import pytest
+except ImportError:
+    # Graceful fallback when pytest is not installed in the Python environment
+    class _MockPytest:
+        @staticmethod
+        def fixture(*args, **kwargs):
+            def decorator(func):
+                return func
+            if len(args) == 1 and callable(args[0]):
+                return args[0]
+            return decorator
+    pytest = _MockPytest()
+
 import numpy as np
 from PIL import Image
 import torch
 from pathlib import Path
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
 
 from app.model import PneumoniaClassifier
 from app.gradcam import GradCAMExplainer
@@ -58,4 +76,24 @@ def test_gradcam_generation(explainer, dummy_image):
     assert isinstance(overlay, Image.Image)
     assert overlay.size == (224, 224)
     assert target in (0, 1, 2)
+
+
+if __name__ == "__main__":
+    print("Executing tests in test_inference.py directly...")
+    eng = PneumoniaClassifier()
+    exp = GradCAMExplainer(eng)
+    arr = np.random.randint(0, 255, (224, 224, 3), dtype=np.uint8)
+    img = Image.fromarray(arr)
+
+    test_model_loading(eng)
+    print("  [OK] test_model_loading passed")
+
+    test_predict_probabilities(eng, img)
+    print("  [OK] test_predict_probabilities passed")
+
+    test_gradcam_generation(exp, img)
+    print("  [OK] test_gradcam_generation passed")
+
+    print("\nAll tests passed successfully.")
+
 
